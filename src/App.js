@@ -1,62 +1,72 @@
 
 import React, { useState } from "react";
-import "./App.css";
+//import "./MovieSearch.css";
+import "./App.css"
 
-const API_KEY = "fb89f2741feabd20aeed1fab9118e670"; // i Generated it from https://openweathermap.org/
+const API_KEY = "379f442c"; // key Generated from OMDb Api
 
-function App() {
-  const celsiusToFahrenheit = (celsius) => {
-    return (celsius * 9/5) + 32;
-  };
- // State to hold the user's input and fetched weather data
+const MovieSearch = () => {
   const [query, setQuery] = useState("");
-  const [weather, setWeather] = useState(null);
+  const [movies, setMovies] = useState([]);
+  const [error, setError] = useState(null);
 
-// Function to fetch weather data from OpenWeatherMap API 
-  const fetchWeather = async () => {
-    const response = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${query}&appid=${API_KEY}`);
-    const data = await response.json();
-    setWeather(data);
-  };
-  // This function is triggered when the user presses the "Enter" key 
-  // in the search input field. It calls the fetchWeather
-  const handleSearch = (e) => {
-    if (e.key === "Enter") {
-      fetchWeather();
+  const handleSearch = async () => {
+    setError(null);// Clear any previous errors
+
+    if (!query.trim()) {
+      setError("Invalid movie name. Please try again.");
+      setMovies([]); // Clear movie list
+      return;
+    }
+
+    try {
+      // Fetch movie data from the OMDb API
+      const response = await fetch(`http://www.omdbapi.com/?s=${query}&apikey=${API_KEY}`);
+      const data = await response.json();
+  // Check if the response was successful
+      if (data.Response === "True") {
+        setMovies(data.Search);// Update the movie list with search results
+      } else {
+        setError("No results found.");
+        setMovies([]); // Clear movie list
+      }
+    } catch (error) {
+      setError("An error occurred. Please try again later.");
+      setMovies([]);// Clear movie list
     }
   };
 
   return (
-    <div className="App">
-      <header className="App-header">
-        <h1>Weather App</h1>
-        <div className="search-container">
-          <input
-            type="text"
-            className="search"
-            placeholder="Search for a city..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyPress={handleSearch}
-          />
-        </div>
-        {weather && (
-          <div className="weather">
-            <h2>{weather.name}, {weather.sys.country}</h2>
-            <div className="weather-info">
-              <div className="temperature">{Math.round(celsiusToFahrenheit(weather.main.temp - 273.15))}°F</div>
-              <div className="description">{weather.weather[0].description}</div>
-              <img
-                className="weather-icon"
-                src={`http://openweathermap.org/img/w/${weather.weather[0].icon}.png`}
-                alt="Weather Icon"
-              />
+    <div className="movie-search">
+      <div className="search-container">
+        <input
+          type="text"
+          className="search"
+          placeholder="Search for a movie..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+        <button className="search-button" onClick={handleSearch}>Search</button>
+      </div>
+      {error && <div className="error">{error}</div>}
+      <div className="movie-list">
+        {movies.map((movie) => (
+          <div className="movie" key={movie.imdbID}>
+            <img
+              className="poster"
+              src={movie.Poster !== "N/A" ? movie.Poster : "placeholder.png"}
+              alt={`${movie.Title} Poster`}
+            />
+            <div className="movie-details">
+              <h3>{movie.Title}</h3>
+              <p>{movie.Year}</p>
             </div>
           </div>
-        )}
-      </header>
+        ))}
+      </div>
     </div>
   );
-}
+};
 
-export default App;
+export default MovieSearch;
+
